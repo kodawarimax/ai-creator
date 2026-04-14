@@ -195,7 +195,7 @@ function syncLayersPanel() {
   const elements = Array.from(svgCanvas.querySelectorAll("g.selectable")).reverse();
 
   if (elements.length === 0) {
-    list.innerHTML = '<div class="layer-item placeholder">No elements</div>';
+    list.innerHTML = '<div class="layer-item placeholder">要素なし</div>';
     return;
   }
 
@@ -325,7 +325,7 @@ function initVectorEditor() {
       const div = document.createElement("div");
       div.setAttribute("contenteditable", "true");
       div.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
-      div.style.cssText = `font-family:YuGothic,sans-serif;font-size:${fs}px;color:${fill};background:rgba(255,255,255,0.95);border:1px solid #00f0ff;padding:2px 4px;outline:none;white-space:pre-wrap;min-height:${fs}px;box-sizing:border-box;width:100%;height:100%;overflow:auto;`;
+      div.style.cssText = `font-family:YuGothic,sans-serif;font-size:${fs}px;color:${fill};background:rgba(255,255,255,0.95);border:1px solid #F59E0B;padding:2px 4px;outline:none;white-space:pre-wrap;min-height:${fs}px;box-sizing:border-box;width:100%;height:100%;overflow:auto;`;
       div.textContent = currentText;
       fo.appendChild(div);
       svgCanvas.appendChild(fo);
@@ -1653,7 +1653,7 @@ svgCanvas.addEventListener('mousedown', (e) => {
   preview.setAttribute('y', svgPt.y);
   preview.setAttribute('width', 0);
   preview.setAttribute('height', 0);
-  const toolColors = { rect: ['rgba(0,240,255,0.1)', '#00f0ff'], text: ['rgba(255,200,0,0.1)', '#FFD700'], image: ['rgba(100,200,100,0.1)', '#66CC66'] };
+  const toolColors = { rect: ['rgba(245,158,11,0.1)', '#F59E0B'], text: ['rgba(255,200,0,0.1)', '#FFD700'], image: ['rgba(100,200,100,0.1)', '#66CC66'] };
   const [fillC, strokeC] = toolColors[state.currentTool] || toolColors.rect;
   preview.setAttribute('fill', fillC);
   preview.setAttribute('stroke', strokeC);
@@ -1730,7 +1730,7 @@ svgCanvas.addEventListener('mouseup', (e) => {
     rect.setAttribute('width', w);
     rect.setAttribute('height', h);
     rect.setAttribute('fill', 'none');
-    rect.setAttribute('stroke', '#00f0ff');
+    rect.setAttribute('stroke', '#F59E0B');
     rect.setAttribute('stroke-width', '0.3');
     rect.setAttribute('stroke-dasharray', '2,1');
     g.appendChild(rect);

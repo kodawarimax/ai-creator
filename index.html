@@ -46,9 +46,11 @@
 <!-- ===== ウェルカム画面（AI漫画） ===== -->
 <div class="screen" id="screen-welcome">
   <div class="welcome-content">
-    <div class="welcome-back-row">
-      <button class="btn-back-welcome" id="manga-btn-back-top">← ツール選択に戻る</button>
-    </div>
+    <nav class="breadcrumb" aria-label="現在地">
+      <button class="breadcrumb-link" id="manga-btn-back-top">Studio</button>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">AI漫画クリエイター</span>
+    </nav>
     <div class="welcome-icon">📖</div>
     <h1>AI漫画クリエイター</h1>
     <p class="welcome-desc">Claude × Imagen × NotebookLM で漫画を自動制作</p>
@@ -145,7 +147,7 @@
     </div>
     <div class="al-nav-right">
       <div class="al-dropdown">
-        <button id="btn-export-main" class="al-primary">Export ▼</button>
+        <button id="btn-export-main" class="al-primary">書き出し ▼</button>
         <div class="al-dropdown-content al-glass">
           <button id="export-pdf">PDF (Print)</button>
           <button id="export-png">PNG (Image)</button>
@@ -225,15 +227,15 @@
       </div>
 
       <div class="al-panel al-glass" id="layers-panel">
-        <div class="panel-header"><h3>Layers</h3><button id="btn-group-elements" title="Group (Cmd+G)">📦</button></div>
+        <div class="panel-header"><h3>レイヤー</h3><button id="btn-group-elements" title="グループ化 (Cmd+G)">📦</button></div>
         <div class="layers-list" id="layers-list">
-          <div class="layer-item placeholder">No elements</div>
+          <div class="layer-item placeholder">要素なし</div>
         </div>
       </div>
       <div class="al-panel al-glass" id="properties-panel">
         <!-- Text Toolbar: only visible when a text element is selected -->
         <div class="text-toolbar" id="text-toolbar" style="display:none">
-          <h3 style="width:100%;margin-bottom:6px;font-size:11px;text-transform:uppercase;color:var(--text-muted)">Text</h3>
+          <h3 style="width:100%;margin-bottom:6px;font-size:11px;text-transform:uppercase;color:var(--text-muted)">テキスト</h3>
           <div class="prop-row">
             <select id="prop-font-family" style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:white;border-radius:4px;font-size:12px;padding:3px 5px;">
               <option value="YuGothic">YuGothic</option>
@@ -263,11 +265,11 @@
               <input type="color" id="prop-text-color" value="#000000" style="width:24px;height:24px;border:none;padding:0;background:none;cursor:pointer;">
             </label>
           </div>
-          <div class="al-prop-group" style="margin-top:8px;"><label>Text Content</label><textarea id="prop-text-content" rows="3"></textarea></div>
+          <div class="al-prop-group" style="margin-top:8px;"><label>テキスト内容</label><textarea id="prop-text-content" rows="3"></textarea></div>
         </div>
         <hr id="text-toolbar-hr" style="display:none">
 
-        <h3>Transform</h3>
+        <h3>位置・サイズ</h3>
         <div class="al-prop-grid">
           <div class="al-prop-group"><label>X</label><input type="number" id="prop-x" step="0.5"></div>
           <div class="al-prop-group"><label>Y</label><input type="number" id="prop-y" step="0.5"></div>
@@ -275,21 +277,21 @@
           <div class="al-prop-group"><label>H</label><input type="number" id="prop-h" step="0.5"></div>
         </div>
         <hr>
-        <h3>Fill / Stroke</h3>
+        <h3>塗り・線</h3>
         <div class="prop-row" style="gap:8px;margin-bottom:6px;">
-          <div class="al-prop-group" style="flex:1"><label>Fill</label><input type="color" id="prop-fill" value="#000000"><input type="text" id="prop-fill-hex" value="#000000" maxlength="7"></div>
+          <div class="al-prop-group" style="flex:1"><label>塗り</label><input type="color" id="prop-fill" value="#000000"><input type="text" id="prop-fill-hex" value="#000000" maxlength="7"></div>
         </div>
         <div class="prop-row" style="gap:8px;">
-          <div class="al-prop-group" style="flex:1"><label>Stroke</label><input type="color" id="prop-stroke" value="#000000"></div>
-          <div class="al-prop-group" style="flex:1"><label>Stroke W</label><input type="number" id="prop-stroke-width" min="0" step="0.1" value="0" style="width:56px;"></div>
+          <div class="al-prop-group" style="flex:1"><label>線色</label><input type="color" id="prop-stroke" value="#000000"></div>
+          <div class="al-prop-group" style="flex:1"><label>線幅</label><input type="number" id="prop-stroke-width" min="0" step="0.1" value="0" style="width:56px;"></div>
         </div>
         <div class="prop-row" style="gap:8px;margin-top:6px;">
-          <div class="al-prop-group" style="flex:1"><label>Opacity</label><input type="range" id="prop-opacity" min="0" max="100" value="100" style="width:100%"><span id="prop-opacity-label">100%</span></div>
+          <div class="al-prop-group" style="flex:1"><label>不透明度</label><input type="range" id="prop-opacity" min="0" max="100" value="100" style="width:100%"><span id="prop-opacity-label">100%</span></div>
         </div>
         <hr>
         <div class="prop-row" style="gap:8px;margin-top:4px;">
-          <button id="btn-delete-element" class="al-btn-danger" style="flex:1">Delete</button>
-          <button id="btn-duplicate" class="al-btn-secondary" style="flex:1">Duplicate</button>
+          <button id="btn-delete-element" class="al-btn-danger" style="flex:1">削除</button>
+          <button id="btn-duplicate" class="al-btn-secondary" style="flex:1">複製</button>
         </div>
         <hr>
         <h3>参照透明度</h3>
@@ -304,9 +306,9 @@
   <!-- AI Processing Overlay -->
   <div id="ai-loading" class="al-ai-loading hidden al-glass">
     <div class="al-spinner"></div>
-    <h2 id="ai-loading-title">AI Processing...</h2>
+    <h2 id="ai-loading-title">AI 処理中...</h2>
     <div class="al-progress-container"><div id="ai-progress-bar" class="al-progress-bar-design"></div></div>
-    <p id="ai-status">Analysing layout and semantics with Gemini Flash 2.5...</p>
+    <p id="ai-status">Gemini Flash 2.5 でレイアウトとセマンティクスを分析中...</p>
     <div id="ai-step-logs" class="al-mini-log"></div>
   </div>
 
@@ -343,7 +345,7 @@
       </div>
       <div class="video-settings">
         <div class="al-prop-group">
-          <label>Animation Preset</label>
+          <label>アニメーション</label>
           <select id="video-preset">
             <option value="cinematic">Cinematic (Slow Pan/Zoom)</option>
             <option value="energetic">Energetic (Quick Slide)</option>
@@ -351,7 +353,7 @@
           </select>
         </div>
         <div class="al-prop-group">
-          <label>Duration</label>
+          <label>再生時間</label>
           <select id="video-duration">
             <option value="5">5 Seconds (Short)</option>
             <option value="10" selected>10 Seconds (Standard)</option>
