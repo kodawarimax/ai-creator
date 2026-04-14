@@ -397,6 +397,9 @@ html, body {
 .layer-item:hover { background: rgba(255,255,255,0.06); }
 .layer-item.active { background: rgba(0,240,255,0.1); color: var(--accent); }
 .layer-item.placeholder { color: #555; font-style: italic; }
+.layer-btn { background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px; opacity: 0.6; }
+.layer-btn:hover { opacity: 1; }
+.layer-label { flex: 1; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .al-glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 
@@ -580,3 +583,5 @@ g.selectable { transition: outline 0.1s; }
   background: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.3);
 }
+
+.snap-guide-line { pointer-events: none; }

@@ -188,7 +188,7 @@ function syncLayersPanel() {
   const list = $("layers-list");
   list.innerHTML = "";
   const elements = Array.from(svgCanvas.querySelectorAll("g.selectable")).reverse();
-  
+
   if (elements.length === 0) {
     list.innerHTML = '<div class="layer-item placeholder">No elements</div>';
     return;
@@ -198,11 +198,35 @@ function syncLayersPanel() {
     const item = document.createElement("div");
     item.className = "layer-item";
     if (state.selectedElement === el) item.classList.add("active");
-    
-    const typeIcon = el.dataset.type === "textblock" ? "T" : (el.dataset.type === "image" ? "🖼" : "square");
-    item.innerHTML = `<span style="margin-right:8px">${typeIcon}</span><span>${el.dataset.label || el.id}</span>`;
-    
-    item.onclick = () => selectElement(el);
+
+    const typeIcon = el.dataset.type === "textblock" ? "T" : (el.dataset.type === "image" ? "🖼" : "■");
+    const isHidden = el.style.display === 'none';
+    const isLocked = el.dataset.locked === 'true';
+
+    item.innerHTML = `
+      <button class="layer-btn layer-vis" title="表示/非表示">${isHidden ? '👁‍🗨' : '👁'}</button>
+      <button class="layer-btn layer-lock" title="ロック/解除">${isLocked ? '🔒' : '🔓'}</button>
+      <span class="layer-label"><span style="margin-right:4px">${typeIcon}</span>${el.dataset.label || el.id}</span>
+    `;
+
+    item.querySelector('.layer-vis').addEventListener('click', (e) => {
+      e.stopPropagation();
+      el.style.display = isHidden ? '' : 'none';
+      syncLayersPanel();
+    });
+
+    item.querySelector('.layer-lock').addEventListener('click', (e) => {
+      e.stopPropagation();
+      el.dataset.locked = isLocked ? 'false' : 'true';
+      el.style.pointerEvents = isLocked ? 'all' : 'none';
+      el.style.opacity = isLocked ? '' : '0.6';
+      syncLayersPanel();
+    });
+
+    item.querySelector('.layer-label').addEventListener('click', () => {
+      if (el.dataset.locked !== 'true') selectElement(el);
+    });
+
     list.appendChild(item);
   });
 }
@@ -229,6 +253,7 @@ function initVectorEditor() {
   svgCanvas.querySelectorAll('g.selectable').forEach(el => {
     el.style.pointerEvents = 'all';
     el.onmousedown = (e) => {
+      if (el.dataset.locked === 'true') return;
       e.stopPropagation();
       hideContextMenu();
       selectElement(el);
@@ -259,6 +284,7 @@ function initVectorEditor() {
     };
 
     el.oncontextmenu = (e) => {
+      if (el.dataset.locked === 'true') return;
       e.preventDefault();
       e.stopPropagation();
       selectElement(el);
@@ -267,6 +293,7 @@ function initVectorEditor() {
 
     // Double-click: inline contenteditable text editing or image replace
     el.ondblclick = (e) => {
+      if (el.dataset.locked === 'true') return;
       e.stopPropagation();
 
       if (el.dataset.role === 'photo' || el.dataset.type === 'image') {
@@ -305,12 +332,41 @@ function initVectorEditor() {
       window.getSelection().addRange(range);
 
       const commit = () => {
-        const newText = div.textContent || "";
-        if (newText !== currentText) {
-          saveUndoState();
-          const lines = newText.split("\n");
-          texts.forEach((t, i) => { t.textContent = i < lines.length ? lines[i] : ""; });
+        saveUndoState();
+        const newText = div.innerText || div.textContent || "";
+        const lines = newText.split("\n");
+        const existingTexts = Array.from(el.querySelectorAll("text"));
+
+        // Update existing text elements
+        existingTexts.forEach((t, i) => {
+          t.textContent = i < lines.length ? lines[i] : "";
+        });
+
+        // Add new text elements if more lines than existing
+        if (lines.length > existingTexts.length && existingTexts.length > 0) {
+          const lastText = existingTexts[existingTexts.length - 1];
+          const baseX = parseFloat(lastText.getAttribute("x") || 0);
+          const baseY = parseFloat(lastText.getAttribute("y") || 0);
+          const lineH = parseFloat(lastText.getAttribute("font-size") || 4) * 1.6;
+          const fontFamily = lastText.getAttribute("font-family") || "YuGothic, sans-serif";
+          const fontSize = lastText.getAttribute("font-size") || "4";
+          const fontWeight = lastText.getAttribute("font-weight") || "normal";
+          const fill = lastText.getAttribute("fill") || "#000";
+
+          for (let i = existingTexts.length; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const newT = document.createElementNS(SVG_NS, "text");
+            newT.setAttribute("x", baseX);
+            newT.setAttribute("y", baseY + (i - existingTexts.length + 1) * lineH);
+            newT.setAttribute("font-family", fontFamily);
+            newT.setAttribute("font-size", fontSize);
+            newT.setAttribute("font-weight", fontWeight);
+            newT.setAttribute("fill", fill);
+            newT.textContent = lines[i];
+            el.appendChild(newT);
+          }
         }
+
         fo.remove();
         updatePropertiesUI(el);
       };
@@ -392,6 +448,11 @@ function updatePropertiesUI(el) {
       $("prop-stroke-width").value = rectEl.getAttribute("stroke-width") || 0;
     }
   }
+
+  // Opacity
+  const opacity = parseFloat(el.style.opacity || 1) * 100;
+  if ($("prop-opacity")) $("prop-opacity").value = opacity;
+  if ($("prop-opacity-label")) $("prop-opacity-label").textContent = `${Math.round(opacity)}%`;
 }
 
 function updateSelectionBox() {
@@ -444,6 +505,65 @@ function detectResizeHandle(e) {
   if (target.classList.contains("al-s")) return "s";
   if (target.classList.contains("al-w")) return "w";
   return null;
+}
+
+function getSnapGuides(movingEl, threshold = 3) {
+  const guides = [];
+  const movingBBox = movingEl.getBBox();
+  const mx = movingBBox.x, my = movingBBox.y;
+  const mw = movingBBox.width, mh = movingBBox.height;
+  const mCx = mx + mw / 2, mCy = my + mh / 2;
+
+  // Canvas center guides
+  guides.push({ axis: 'x', value: 210, type: 'center' }); // 420/2
+  guides.push({ axis: 'y', value: 148.5, type: 'center' }); // 297/2
+
+  svgCanvas.querySelectorAll('g.selectable').forEach(other => {
+    if (other === movingEl || other.style.display === 'none') return;
+    try {
+      const ob = other.getBBox();
+      // Left/right/center edges
+      guides.push({ axis: 'x', value: ob.x, type: 'edge' });
+      guides.push({ axis: 'x', value: ob.x + ob.width, type: 'edge' });
+      guides.push({ axis: 'x', value: ob.x + ob.width / 2, type: 'center' });
+      // Top/bottom/center edges
+      guides.push({ axis: 'y', value: ob.y, type: 'edge' });
+      guides.push({ axis: 'y', value: ob.y + ob.height, type: 'edge' });
+      guides.push({ axis: 'y', value: ob.y + ob.height / 2, type: 'center' });
+    } catch (e) {}
+  });
+  return guides;
+}
+
+function findSnap(value, guides, axis, threshold) {
+  let best = null, bestDist = threshold + 1;
+  for (const g of guides) {
+    if (g.axis !== axis) continue;
+    const dist = Math.abs(value - g.value);
+    if (dist < bestDist) { bestDist = dist; best = g; }
+  }
+  return best;
+}
+
+function drawSnapLines(snaps) {
+  // Remove old snap lines
+  svgCanvas.querySelectorAll('.snap-guide-line').forEach(l => l.remove());
+  snaps.forEach(s => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.classList.add('snap-guide-line');
+    if (s.axis === 'x') {
+      line.setAttribute('x1', s.value); line.setAttribute('y1', 0);
+      line.setAttribute('x2', s.value); line.setAttribute('y2', 297);
+    } else {
+      line.setAttribute('x1', 0); line.setAttribute('y1', s.value);
+      line.setAttribute('x2', 420); line.setAttribute('y2', s.value);
+    }
+    line.setAttribute('stroke', '#FF00FF');
+    line.setAttribute('stroke-width', '0.3');
+    line.setAttribute('stroke-dasharray', '2,2');
+    line.style.pointerEvents = 'none';
+    svgCanvas.appendChild(line);
+  });
 }
 
 function startDrag(e) {
@@ -515,6 +635,37 @@ function startDrag(e) {
         child.setAttribute("x", cx + dx);
         child.setAttribute("y", cy + dy);
       });
+      // Snap guides
+      const SNAP_THRESHOLD = 2;
+      const guides = getSnapGuides(state.selectedElement, SNAP_THRESHOLD);
+      try {
+        const bbox = state.selectedElement.getBBox();
+        const activeSnaps = [];
+        // Check left, right, center-x edges
+        for (const edge of [bbox.x, bbox.x + bbox.width, bbox.x + bbox.width / 2]) {
+          const snap = findSnap(edge, guides, 'x', SNAP_THRESHOLD);
+          if (snap) {
+            const correction = snap.value - edge;
+            Array.from(state.selectedElement.children).forEach(c => {
+              c.setAttribute("x", parseFloat(c.getAttribute("x") || 0) + correction);
+            });
+            activeSnaps.push(snap);
+            break;
+          }
+        }
+        for (const edge of [bbox.y, bbox.y + bbox.height, bbox.y + bbox.height / 2]) {
+          const snap = findSnap(edge, guides, 'y', SNAP_THRESHOLD);
+          if (snap) {
+            const correction = snap.value - edge;
+            Array.from(state.selectedElement.children).forEach(c => {
+              c.setAttribute("y", parseFloat(c.getAttribute("y") || 0) + correction);
+            });
+            activeSnaps.push(snap);
+            break;
+          }
+        }
+        drawSnapLines(activeSnaps);
+      } catch (e) {}
     }
 
     state.dragStart = { x: ev.clientX, y: ev.clientY };
@@ -527,6 +678,7 @@ function startDrag(e) {
     state.isResizing = false;
     state.resizeHandle = null;
     state._undoSavedForDrag = false;
+    svgCanvas.querySelectorAll('.snap-guide-line').forEach(l => l.remove());
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
   };
@@ -691,6 +843,13 @@ $("prop-stroke-width")?.addEventListener("input", () => {
   if (!state.selectedElement) return;
   const sw = $("prop-stroke-width").value;
   state.selectedElement.querySelectorAll("rect").forEach(r => r.setAttribute("stroke-width", sw));
+});
+
+$("prop-opacity")?.addEventListener("input", () => {
+  if (!state.selectedElement) return;
+  const val = $("prop-opacity").value;
+  state.selectedElement.style.opacity = val / 100;
+  $("prop-opacity-label").textContent = `${val}%`;
 });
 
 $("btn-duplicate")?.addEventListener("click", () => {
@@ -874,6 +1033,81 @@ $("btn-align-center")?.addEventListener("click", () => {
   updatePropertiesUI(state.selectedElement);
 });
 
+$("btn-align-right")?.addEventListener("click", () => {
+  if (!state.selectedElement) return;
+  saveUndoState();
+  const rect = state.selectedElement.getBBox();
+  const dx = 410 - (rect.x + rect.width); // 420 - 10mm margin
+  Array.from(state.selectedElement.children).forEach(child => {
+    child.setAttribute("x", parseFloat(child.getAttribute("x") || 0) + dx);
+  });
+  updateSelectionBox();
+  updatePropertiesUI(state.selectedElement);
+});
+
+$("btn-align-top")?.addEventListener("click", () => {
+  if (!state.selectedElement) return;
+  saveUndoState();
+  const rect = state.selectedElement.getBBox();
+  const dy = 10 - rect.y;
+  Array.from(state.selectedElement.children).forEach(child => {
+    child.setAttribute("y", parseFloat(child.getAttribute("y") || 0) + dy);
+  });
+  updateSelectionBox();
+  updatePropertiesUI(state.selectedElement);
+});
+
+$("btn-align-bottom")?.addEventListener("click", () => {
+  if (!state.selectedElement) return;
+  saveUndoState();
+  const rect = state.selectedElement.getBBox();
+  const dy = 287 - (rect.y + rect.height); // 297 - 10mm margin
+  Array.from(state.selectedElement.children).forEach(child => {
+    child.setAttribute("y", parseFloat(child.getAttribute("y") || 0) + dy);
+  });
+  updateSelectionBox();
+  updatePropertiesUI(state.selectedElement);
+});
+
+// Grid toggle
+state.gridVisible = false;
+$("btn-grid-toggle")?.addEventListener("click", () => {
+  state.gridVisible = !state.gridVisible;
+  let gridGroup = svgCanvas.querySelector('#grid-overlay');
+  if (state.gridVisible) {
+    if (!gridGroup) {
+      gridGroup = document.createElementNS(SVG_NS, 'g');
+      gridGroup.id = 'grid-overlay';
+      gridGroup.style.pointerEvents = 'none';
+      // 10mm grid
+      for (let x = 0; x <= 420; x += 10) {
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', x); line.setAttribute('y1', 0);
+        line.setAttribute('x2', x); line.setAttribute('y2', 297);
+        line.setAttribute('stroke', x % 50 === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)');
+        line.setAttribute('stroke-width', '0.2');
+        gridGroup.appendChild(line);
+      }
+      for (let y = 0; y <= 297; y += 10) {
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', 0); line.setAttribute('y1', y);
+        line.setAttribute('x2', 420); line.setAttribute('y2', y);
+        line.setAttribute('stroke', y % 50 === 0 ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.06)');
+        line.setAttribute('stroke-width', '0.2');
+        gridGroup.appendChild(line);
+      }
+      // Insert after ghost-layer but before content
+      const contentLayer = svgCanvas.querySelector('#content-layer');
+      if (contentLayer) svgCanvas.insertBefore(gridGroup, contentLayer);
+      else svgCanvas.appendChild(gridGroup);
+    }
+    gridGroup.style.display = '';
+  } else if (gridGroup) {
+    gridGroup.style.display = 'none';
+  }
+  $("btn-grid-toggle")?.classList.toggle('active', state.gridVisible);
+});
+
 // Delete Logic
 $("btn-delete-element")?.addEventListener("click", () => {
   if (!state.selectedElement) return;
@@ -882,6 +1116,42 @@ $("btn-delete-element")?.addEventListener("click", () => {
   state.selectedElement = null;
   updateSelectionBox();
   syncLayersPanel();
+});
+
+$("btn-group-elements")?.addEventListener("click", () => {
+  if (!state.selectedElement) return;
+
+  // Check if selected element is already a group (has child g.selectable elements)
+  const childGroups = state.selectedElement.querySelectorAll('g.selectable');
+  if (childGroups.length > 0) {
+    // Ungroup: move children to parent
+    saveUndoState();
+    const parent = state.selectedElement.parentNode;
+    Array.from(childGroups).forEach(child => {
+      parent.insertBefore(child, state.selectedElement);
+    });
+    state.selectedElement.remove();
+    state.selectedElement = null;
+    updateSelectionBox();
+    syncLayersPanel();
+    initVectorEditor();
+    return;
+  }
+
+  // Single element: wrap in a group
+  saveUndoState();
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.id = `group-${Date.now()}`;
+  g.dataset.id = g.id;
+  g.dataset.type = 'group';
+  g.dataset.role = 'group';
+  g.dataset.label = 'Group';
+  g.classList.add('element', 'selectable');
+  state.selectedElement.parentNode.insertBefore(g, state.selectedElement);
+  g.appendChild(state.selectedElement);
+  selectElement(g);
+  syncLayersPanel();
+  initVectorEditor();
 });
 
 // ===================================================================
@@ -1353,6 +1623,10 @@ document.addEventListener('keydown', (e) => {
   const toolMap = { 'v': 'select', 'm': 'rect', 't': 'text', 'i': 'image' };
   if (toolMap[e.key]) {
     document.querySelector(`.al-tool-btn[data-tool="${toolMap[e.key]}"]`)?.click();
+  }
+  if (e.key === 'g' && !toolMap[e.key]) {
+    $("btn-grid-toggle")?.click();
+    return;
   }
 });
 
