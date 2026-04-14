@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 // ===== Config =====
 const API_BASE = window.location.hostname === 'localhost'
   ? "http://localhost:5051"
-  : "https://ai-creator-api.onrender.com";
+  : "http://72.61.119.101:5051";
 
 // ===== State =====
 const state = {
