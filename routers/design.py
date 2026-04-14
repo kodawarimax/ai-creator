@@ -633,9 +633,139 @@ def extract_design_system(scan_id):
     return jsonify({'error': 'All models failed'}), 500
 
 
+def _extract_page_native(page, page_num):
+    """Extract text blocks, images, and drawings from a PDF page using PyMuPDF natively.
+    No AI calls — instant, accurate, free."""
+    rect = page.rect
+    pw, ph = rect.width, rect.height  # PDF points (1pt = 1/72 inch)
+
+    zones = []
+    z_idx = 0
+
+    # Extract text blocks: (x0, y0, x1, y1, "text", block_no, block_type)
+    blocks = page.get_text("dict", flags=fitz.TEXT_PRESERVE_WHITESPACE)["blocks"]
+    for block in blocks:
+        if block.get("type") == 0:  # text block
+            bbox = block.get("bbox", (0, 0, 0, 0))
+            x0, y0, x1, y1 = bbox
+            lines_text = []
+            max_fs = 0
+            font_weight = "regular"
+            fg_color = "#000000"
+            for line in block.get("lines", []):
+                line_text = ""
+                for span in line.get("spans", []):
+                    line_text += span.get("text", "")
+                    fs = span.get("size", 10)
+                    if fs > max_fs:
+                        max_fs = fs
+                    if "bold" in span.get("font", "").lower() or (span.get("flags", 0) & 16):
+                        font_weight = "bold"
+                    color_int = span.get("color", 0)
+                    if color_int != 0:
+                        fg_color = f"#{color_int:06x}"
+                if line_text.strip():
+                    lines_text.append(line_text.strip())
+
+            text = "\n".join(lines_text)
+            if not text.strip():
+                continue
+
+            # Classify role by font size
+            role = "body"
+            if max_fs >= 18:
+                role = "headline"
+            elif max_fs >= 13:
+                role = "subheadline"
+            elif max_fs <= 8:
+                role = "caption"
+
+            zones.append({
+                "id": f"zone_{z_idx}",
+                "role": role,
+                "bounds": {"x_mm": round(x0 * 0.352778, 2), "y_mm": round(y0 * 0.352778, 2),
+                           "w_mm": round((x1 - x0) * 0.352778, 2), "h_mm": round((y1 - y0) * 0.352778, 2)},
+                "text_content": text,
+                "text_direction": "horizontal",
+                "bg_color": None,
+                "fg_color": fg_color,
+                "font_size_pt": round(max_fs, 1),
+                "font_weight": font_weight,
+                "is_editable": True,
+                "z_order": z_idx
+            })
+            z_idx += 1
+
+        elif block.get("type") == 1:  # image block
+            bbox = block.get("bbox", (0, 0, 0, 0))
+            x0, y0, x1, y1 = bbox
+            w = (x1 - x0) * 0.352778
+            h = (y1 - y0) * 0.352778
+            if w < 5 or h < 5:
+                continue  # Skip tiny images/icons
+
+            zones.append({
+                "id": f"zone_{z_idx}",
+                "role": "photo",
+                "bounds": {"x_mm": round(x0 * 0.352778, 2), "y_mm": round(y0 * 0.352778, 2),
+                           "w_mm": round(w, 2), "h_mm": round(h, 2)},
+                "text_content": "画像",
+                "text_direction": "horizontal",
+                "bg_color": None,
+                "fg_color": None,
+                "font_size_pt": 0,
+                "font_weight": "regular",
+                "is_editable": False,
+                "z_order": z_idx
+            })
+            z_idx += 1
+
+    # Extract drawings/rects (colored rectangles often used as backgrounds/bars)
+    drawings = page.get_drawings()
+    for d in drawings:
+        if d.get("fill") and d.get("rect"):
+            r = d["rect"]
+            x0, y0, x1, y1 = r.x0, r.y0, r.x1, r.y1
+            w = (x1 - x0) * 0.352778
+            h = (y1 - y0) * 0.352778
+            if w < 3 or h < 3:
+                continue
+            fill = d["fill"]
+            if isinstance(fill, (list, tuple)) and len(fill) >= 3:
+                hex_color = "#{:02x}{:02x}{:02x}".format(int(fill[0]*255), int(fill[1]*255), int(fill[2]*255))
+            else:
+                continue
+            # Skip white/near-white fills
+            if all(c > 0.95 for c in fill[:3]):
+                continue
+
+            zones.append({
+                "id": f"zone_{z_idx}",
+                "role": "decoration",
+                "bounds": {"x_mm": round(x0 * 0.352778, 2), "y_mm": round(y0 * 0.352778, 2),
+                           "w_mm": round(w, 2), "h_mm": round(h, 2)},
+                "text_content": "",
+                "text_direction": "horizontal",
+                "bg_color": hex_color,
+                "fg_color": None,
+                "font_size_pt": 0,
+                "font_weight": "regular",
+                "is_editable": True,
+                "z_order": z_idx
+            })
+            z_idx += 1
+
+    return {
+        "page_type": "extracted",
+        "page_num": page_num,
+        "page_size": {"w_pt": pw, "h_pt": ph, "w_mm": round(pw * 0.352778, 2), "h_mm": round(ph * 0.352778, 2)},
+        "zones": zones
+    }
+
+
 @design_bp.route('/templatize/<scan_id>/<int:page_num>', methods=['POST'])
 def templatize_page(scan_id, page_num):
-    """Phase 3: Convert a single page to editable SVG template (on-demand)."""
+    """Convert a PDF page to editable SVG using native PyMuPDF extraction — instant, no AI."""
     scan_dir = os.path.join(SCAN_RESULTS_DIR, scan_id)
     pdf_path = os.path.join(scan_dir, "source.pdf")
     if not os.path.exists(pdf_path):
@@ -647,21 +777,23 @@ def templatize_page(scan_id, page_num):
 
     page = doc[page_num - 1]
 
-    # Generate high-quality ghost reference (150 DPI)
+    # Generate ghost reference image
     pix_ghost = page.get_pixmap(dpi=150)
     img_ghost = Image.open(io.BytesIO(pix_ghost.tobytes("png")))
     ghost_path = os.path.join(scan_dir, f"ghost_{page_num}.jpg")
     img_ghost.save(ghost_path, format="JPEG", quality=80)
 
-    # AI Vision analysis for this page
-    scan_result = _scan_page_qwen_vl(page, page_num)
+    # Try native extraction first; fall back to AI Vision for scanned/image PDFs
+    scan_result = _extract_page_native(page, page_num)
+    if len(scan_result.get("zones", [])) == 0:
+        logger.info(f"Page {page_num}: no native content (scanned PDF), using AI Vision")
+        scan_result = _scan_page_qwen_vl(page, page_num)
 
     # Save spec
     spec_path = os.path.join(scan_dir, f"spec_{page_num}.json")
     with open(spec_path, 'w', encoding='utf-8') as f:
         json.dump(scan_result, f, ensure_ascii=False)
 
-    # Build SVG with URL-referenced ghost image
     ghost_url = f"/api/design/ghost-image/{scan_id}/{page_num}"
     svg = _build_layered_svg_url(scan_result, ghost_url)
 

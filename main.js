@@ -975,35 +975,30 @@ $("scan-pdf-input")?.addEventListener("change", async (e) => {
 
     // Show filmstrip
     renderFilmstrip(data.pages);
-    showAILog(`${data.total_pages}ページのプレビュー完了`, "ai-step-logs");
+    state.designPages = [];
+    state.pageSpecs = [];
 
-    // Auto-templatize first page immediately (no manual button needed)
-    $('ai-status').textContent = "ページ1をAI解析中（要素を自動検出）...";
-    showAILog("AI Visionでページ1の要素を自動検出中...", "ai-step-logs");
+    // Templatize first page (native: instant, AI Vision: ~30s for scanned PDFs)
+    $('ai-status').textContent = "ページ1の要素を抽出中...";
+    showAILog("ページ1の要素を抽出中...", "ai-step-logs");
     try {
       const tRes = await fetch(`${API_BASE}/api/design/templatize/${data.scan_id}/1`, { method: 'POST' });
       if (!tRes.ok) throw new Error(`Templatize error: ${tRes.status}`);
       const tData = await tRes.json();
       state.previewMode = false;
-      state.designPages = state.designPages || [];
       state.designPages[0] = tData.svg;
       state.pageSpecs[0] = tData.spec;
       updatePageUI();
       syncLayersPanel();
       initVectorEditor();
       $("page-indicator").textContent = `Page 1 / ${data.total_pages} (編集モード)`;
-      showAILog(`Page 1 テンプレート化完了: ${tData.spec.zones?.length || 0}ゾーン検出`, "ai-step-logs");
+      showAILog(`Page 1: ${tData.spec.zones?.length || 0}要素検出`, "ai-step-logs");
     } catch (tErr) {
-      // Fallback to preview mode if templatize fails
       showPreviewPage(1);
-      showAILog(`自動テンプレート化失敗（プレビューモード）: ${tErr.message}`, "ai-step-logs");
+      showAILog(`テンプレート化失敗: ${tErr.message}`, "ai-step-logs");
     }
 
     loadingOverlay.classList.add('hidden');
-
-    // Phase 2: Extract design system in background
-    showAILog("バックグラウンドでデザインシステムを抽出中...", "ai-step-logs");
-    extractDesignSystem(data.scan_id);
 
   } catch (err) {
     $('ai-status').textContent = "エラー";
@@ -1030,37 +1025,13 @@ function renderFilmstrip(pages) {
       el.classList.add('active');
       const pg = parseInt(el.dataset.page);
       state.currentPageIndex = pg - 1;
-
-      // Auto-templatize if not already done
-      if (state.scanId && !state.designPages[pg - 1]) {
-        loadingOverlay.classList.remove('hidden');
-        $('ai-status').textContent = `Page ${pg} をAI解析中...`;
-        try {
-          const res = await fetch(`${API_BASE}/api/design/templatize/${state.scanId}/${pg}`, { method: 'POST' });
-          if (!res.ok) throw new Error(`Templatize error: ${res.status}`);
-          const data = await res.json();
-          state.designPages[pg - 1] = data.svg;
-          state.pageSpecs[pg - 1] = data.spec;
-          state.previewMode = false;
-          updatePageUI();
-          syncLayersPanel();
-          initVectorEditor();
-          $("page-indicator").textContent = `Page ${pg} / ${state.scanTotalPages} (編集モード)`;
-          showAILog(`Page ${pg} テンプレート化完了: ${data.spec.zones?.length || 0}ゾーン`, "ai-step-logs");
-        } catch (err) {
-          showPreviewPage(pg);
-          showAILog(`Page ${pg} テンプレート化失敗: ${err.message}`, "ai-step-logs");
-        } finally {
-          loadingOverlay.classList.add('hidden');
-        }
-      } else if (state.designPages[pg - 1]) {
-        state.previewMode = false;
+      if (state.designPages[pg - 1]) {
         updatePageUI();
         syncLayersPanel();
         initVectorEditor();
         $("page-indicator").textContent = `Page ${pg} / ${state.scanTotalPages} (編集モード)`;
       } else {
-        showPreviewPage(pg);
+        await autoTemplatizeAndShow(pg - 1);
       }
     });
   });
