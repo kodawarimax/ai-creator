@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Config
 PDF_PATH = os.path.join(os.path.dirname(__file__), "..", "press_231.pdf")
-API_KEY = "AIzaSyBOACATQt2uLZx7GR4Bn8HWHrShqka2UKI"
+API_KEY = os.environ.get("GEMINI_API_KEY", "")
 DPI = 300
 
 def simulate_scan():

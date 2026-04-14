@@ -8,3 +8,4 @@ dist/
 *.pdf
 .env
 /tmp/
+scripts/simulate_press_scan.py

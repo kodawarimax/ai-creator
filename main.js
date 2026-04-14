@@ -66,6 +66,11 @@ function redo() {
 // ===== DOM Helper =====
 const $ = (id) => document.getElementById(id);
 
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   $(id).classList.add("active");
@@ -1362,7 +1367,7 @@ function renderFilmstrip(pages) {
   strip.classList.remove("hidden");
   strip.innerHTML = pages.map((p, i) =>
     `<div class="filmstrip-thumb${i === 0 ? ' active' : ''}" data-page="${p.page}">
-      <img src="${API_BASE}${p.preview_url}" alt="Page ${p.page}">
+      <img src="${API_BASE}${p.preview_url}" alt="Page ${escHtml(p.page)}">
       <span>${p.page}</span>
     </div>`
   ).join('');
@@ -1555,7 +1560,7 @@ function renderDesignSpecPanel(spec) {
   const paletteEl = $("spec-palette");
   if (paletteEl && colors.length) {
     paletteEl.innerHTML = colors.map(c =>
-      `<div class="spec-swatch" style="background:${c.hex}" title="${c.name || c.role}: ${c.usage || ''}" data-hex="${c.hex}">
+      `<div class="spec-swatch" style="background:${c.hex}" title="${escHtml(c.name || c.role)}: ${escHtml(c.usage || '')}" data-hex="${c.hex}">
         <span class="swatch-label">${c.hex}</span>
       </div>`
     ).join('');
@@ -1577,8 +1582,8 @@ function renderDesignSpecPanel(spec) {
     }
     typoEl.innerHTML = unique.slice(0, 8).map(t =>
       `<div class="spec-typo-item">
-        <span class="typo-role">${t.role}</span>
-        <span class="typo-detail">${t.estimated_size_pt || '?'}pt / ${t.weight || '?'} / ${t.style || '?'} / ${t.direction || 'h'}</span>
+        <span class="typo-role">${escHtml(t.role)}</span>
+        <span class="typo-detail">${escHtml(t.estimated_size_pt || '?')}pt / ${escHtml(t.weight || '?')} / ${escHtml(t.style || '?')} / ${escHtml(t.direction || 'h')}</span>
       </div>`
     ).join('');
   }

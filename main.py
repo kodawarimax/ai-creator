@@ -35,4 +35,4 @@ app = create_app()
 
 if __name__ == '__main__':
     # Using Port 5051 as per the God Tier plan
-    app.run(host='0.0.0.0', port=5051, debug=True)
+    app.run(host='0.0.0.0', port=5051, debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')

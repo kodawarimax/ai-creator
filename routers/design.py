@@ -197,7 +197,8 @@ def _al_get_page_structure(page):
                     "x": r.x0*scale_x, "y": r.y0*scale_y, "w": (r.x1-r.x0)*scale_x, "h": (r.y1-r.y0)*scale_y,
                     "base64": base64.b64encode(base_image["image"]).decode('utf-8'), "ext": base_image["ext"]
                 })
-        except: pass
+        except Exception as e:
+            logger.warning(f"Suppressed error: {e}")
 
     drawings = page.get_drawings()
     for d in drawings:
@@ -243,7 +244,9 @@ def _al_process_page_hybrid(page, page_num):
                 el["label"] = el.pop("suggested_name", "")
                 final_structure.append(el)
             return final_structure
-        except: return structure
+        except Exception as e:
+            logger.warning(f"Suppressed error: {e}")
+            return structure
     else:
         gemini_input = [{"id": s["id"], "type": s["type"], "x": round(s["x"], 1), "y": round(s["y"], 1), "content": s.get("content", "")[:30]} for s in structure[:150]]
         contents = [{"mime_type": "image/png", "data": encoded_image}, PROMPT_ENRICH.format(elements_json=json.dumps(gemini_input, ensure_ascii=False))]
@@ -255,7 +258,8 @@ def _al_process_page_hybrid(page, page_num):
                 l = l_map.get(s["id"], {})
                 s.update({"role": l.get("role", "decoration"), "is_placeholder": l.get("is_template_placeholder", False),
                           "label": l.get("suggested_name", ""), "group_id": l.get("group_id", 0), "adjacent_ids": l.get("adjacent_ids", [])})
-        except: pass
+        except Exception as e:
+            logger.warning(f"Suppressed error: {e}")
         return structure
 
 def _al_build_svg(structure):
@@ -453,7 +457,9 @@ def convert_pdf():
                 yield 'data: ' + json.dumps({"status": "progress", "page": i+1, "total": total, "message": f"Analyzing Page {i+1}..."}) + '\n\n'
                 pages.append(_al_build_svg(_al_process_page_hybrid(doc[i], i+1)))
             yield 'data: ' + json.dumps({"status": "complete", "pages": pages}) + '\n\n'
-        except Exception: yield 'data: ' + json.dumps({"status": "error", "message": traceback.format_exc()}) + '\n\n'
+        except Exception as e:
+            logger.error(f"Processing error: {traceback.format_exc()}")
+            yield 'data: ' + json.dumps({"status": "error", "message": str(e)}) + '\n\n'
         finally:
             if os.path.exists(temp_path): os.remove(temp_path)
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
@@ -465,10 +471,13 @@ def project_load():
     """
     if fitz is None: return jsonify({'error': 'PyMuPDF missing'}), 500
     data = request.json or {}
-    filename = data.get('filename')
-    if not filename: return jsonify({'error': 'No filename'}), 400
-    
+    filename = secure_filename(data.get('filename', ''))
+    if not filename:
+        return jsonify({'error': 'No filename'}), 400
     target_path = os.path.join(os.getcwd(), filename)
+    # Ensure resolved path stays within project root
+    if not os.path.realpath(target_path).startswith(os.path.realpath(os.getcwd())):
+        return jsonify({'error': 'Invalid path'}), 403
     if not os.path.exists(target_path):
         return jsonify({'error': f'File {filename} not found in project root.'}), 404
 
@@ -482,7 +491,9 @@ def project_load():
                 yield 'data: ' + json.dumps({"status": "progress", "page": i+1, "total": total, "message": f"Analyzing Page {i+1}..."}) + '\n\n'
                 pages.append(_al_build_svg(_al_process_page_hybrid(doc[i], i+1)))
             yield 'data: ' + json.dumps({"status": "complete", "pages": pages}) + '\n\n'
-        except Exception: yield 'data: ' + json.dumps({"status": "error", "message": traceback.format_exc()}) + '\n\n'
+        except Exception as e:
+            logger.error(f"Processing error: {traceback.format_exc()}")
+            yield 'data: ' + json.dumps({"status": "error", "message": str(e)}) + '\n\n'
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 
@@ -871,8 +882,9 @@ def scan_pdf():
 
             yield 'data: ' + json.dumps({"status": "complete", **summary}, ensure_ascii=False) + '\n\n'
 
-        except Exception:
-            yield 'data: ' + json.dumps({"status": "error", "message": traceback.format_exc()}) + '\n\n'
+        except Exception as e:
+            logger.error(f"Processing error: {traceback.format_exc()}")
+            yield 'data: ' + json.dumps({"status": "error", "message": str(e)}) + '\n\n'
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -933,7 +945,7 @@ def export_idml(scan_id):
 
     output_path = os.path.join(scan_dir, 'export.idml')
 
-    scripts_dir = '/Users/jungosakamoto/Claude/shared/scripts'
+    scripts_dir = os.environ.get('SHARED_SCRIPTS_DIR', os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '..', 'shared', 'scripts'))
     if scripts_dir not in sys.path:
         sys.path.insert(0, scripts_dir)
 
