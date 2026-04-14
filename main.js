@@ -32,6 +32,37 @@ const state = {
 const bubbleSettings = { style: "rounded", font: "gothic" };
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+// Undo/Redo
+const undoStack = [];
+const redoStack = [];
+const MAX_UNDO = 50;
+
+function saveUndoState() {
+  undoStack.push($('main-svg').innerHTML);
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  redoStack.length = 0; // Clear redo on new action
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  redoStack.push($('main-svg').innerHTML);
+  $('main-svg').innerHTML = undoStack.pop();
+  state.selectedElement = null;
+  updateSelectionBox();
+  syncLayersPanel();
+  initVectorEditor();
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  undoStack.push($('main-svg').innerHTML);
+  $('main-svg').innerHTML = redoStack.pop();
+  state.selectedElement = null;
+  updateSelectionBox();
+  syncLayersPanel();
+  initVectorEditor();
+}
+
 // ===== DOM Helper =====
 const $ = (id) => document.getElementById(id);
 
@@ -150,6 +181,7 @@ function updatePageUI() {
   $("page-indicator").textContent = `Page ${pageIdx + 1} / ${totalP}`;
   syncLayersPanel();
   initVectorEditor();
+  autoSave();
 }
 
 function syncLayersPanel() {
@@ -275,6 +307,7 @@ function initVectorEditor() {
       const commit = () => {
         const newText = div.textContent || "";
         if (newText !== currentText) {
+          saveUndoState();
           const lines = newText.split("\n");
           texts.forEach((t, i) => { t.textContent = i < lines.length ? lines[i] : ""; });
         }
@@ -419,6 +452,7 @@ function startDrag(e) {
   state.isResizing = !!handle;
   state.resizeHandle = handle;
   state.dragStart = { x: e.clientX, y: e.clientY };
+  if (!state._undoSavedForDrag) { saveUndoState(); state._undoSavedForDrag = true; }
 
   const svgRect = svgCanvas.getBoundingClientRect();
   const scaleX = 420 / svgRect.width;
@@ -430,24 +464,50 @@ function startDrag(e) {
     const dy = (ev.clientY - state.dragStart.y) * scaleY;
 
     if (state.isResizing) {
-      const child = state.selectedElement.firstElementChild;
-      if (child) {
-        let x = parseFloat(child.getAttribute("x") || 0);
-        let y = parseFloat(child.getAttribute("y") || 0);
-        let w = parseFloat(child.getAttribute("width") || 0);
-        let h = parseFloat(child.getAttribute("height") || 0);
-        const h_ = state.resizeHandle;
-        if (h_ === "se") { w = Math.max(1, w + dx); h = Math.max(1, h + dy); }
-        else if (h_ === "sw") { x += dx; w = Math.max(1, w - dx); h = Math.max(1, h + dy); }
-        else if (h_ === "ne") { y += dy; w = Math.max(1, w + dx); h = Math.max(1, h - dy); }
-        else if (h_ === "nw") { x += dx; y += dy; w = Math.max(1, w - dx); h = Math.max(1, h - dy); }
-        else if (h_ === "e") { w = Math.max(1, w + dx); }
-        else if (h_ === "w") { x += dx; w = Math.max(1, w - dx); }
-        else if (h_ === "s") { h = Math.max(1, h + dy); }
-        else if (h_ === "n") { y += dy; h = Math.max(1, h - dy); }
-        child.setAttribute("x", x); child.setAttribute("y", y);
-        child.setAttribute("width", w); child.setAttribute("height", h);
-      }
+      // Get original bounding box from first child (usually rect)
+      const children = Array.from(state.selectedElement.children);
+      const first = children[0];
+      if (!first) return;
+      const oldX = parseFloat(first.getAttribute("x") || 0);
+      const oldY = parseFloat(first.getAttribute("y") || 0);
+      const oldW = parseFloat(first.getAttribute("width") || 1);
+      const oldH = parseFloat(first.getAttribute("height") || 1);
+
+      let x = oldX, y = oldY, w = oldW, h = oldH;
+      const h_ = state.resizeHandle;
+      if (h_ === "se") { w = Math.max(1, w + dx); h = Math.max(1, h + dy); }
+      else if (h_ === "sw") { x += dx; w = Math.max(1, w - dx); h = Math.max(1, h + dy); }
+      else if (h_ === "ne") { y += dy; w = Math.max(1, w + dx); h = Math.max(1, h - dy); }
+      else if (h_ === "nw") { x += dx; y += dy; w = Math.max(1, w - dx); h = Math.max(1, h - dy); }
+      else if (h_ === "e") { w = Math.max(1, w + dx); }
+      else if (h_ === "w") { x += dx; w = Math.max(1, w - dx); }
+      else if (h_ === "s") { h = Math.max(1, h + dy); }
+      else if (h_ === "n") { y += dy; h = Math.max(1, h - dy); }
+
+      // Scale factor for proportional child repositioning
+      const scaleX = w / oldW;
+      const scaleY = h / oldH;
+
+      children.forEach(child => {
+        const cx = parseFloat(child.getAttribute("x") || 0);
+        const cy = parseFloat(child.getAttribute("y") || 0);
+        // Reposition relative to the group origin
+        const relX = cx - oldX;
+        const relY = cy - oldY;
+        child.setAttribute("x", x + relX * scaleX);
+        child.setAttribute("y", y + relY * scaleY);
+        if (child.getAttribute("width") !== null) {
+          child.setAttribute("width", parseFloat(child.getAttribute("width")) * scaleX);
+        }
+        if (child.getAttribute("height") !== null) {
+          child.setAttribute("height", parseFloat(child.getAttribute("height")) * scaleY);
+        }
+        // Scale font-size proportionally for text elements
+        if (child.tagName === "text") {
+          const fs = parseFloat(child.getAttribute("font-size") || 10);
+          child.setAttribute("font-size", fs * Math.min(scaleX, scaleY));
+        }
+      });
     } else if (state.isDragging) {
       Array.from(state.selectedElement.children).forEach(child => {
         const cx = parseFloat(child.getAttribute("x") || 0);
@@ -466,6 +526,7 @@ function startDrag(e) {
     state.isDragging = false;
     state.isResizing = false;
     state.resizeHandle = null;
+    state._undoSavedForDrag = false;
     document.removeEventListener('mousemove', onMouseMove);
     document.removeEventListener('mouseup', onMouseUp);
   };
@@ -634,6 +695,7 @@ $("prop-stroke-width")?.addEventListener("input", () => {
 
 $("btn-duplicate")?.addEventListener("click", () => {
   if (!state.selectedElement) return;
+  saveUndoState();
   const clone = state.selectedElement.cloneNode(true);
   // Offset by 5mm
   Array.from(clone.children).forEach(child => {
@@ -734,6 +796,19 @@ $("image-replace-input")?.addEventListener("change", (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
 
+  // Undo: Cmd+Z
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    undo();
+    return;
+  }
+  // Redo: Cmd+Shift+Z
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) {
+    e.preventDefault();
+    redo();
+    return;
+  }
+
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (state.selectedElement) {
       state.selectedElement.remove();
@@ -802,6 +877,7 @@ $("btn-align-center")?.addEventListener("click", () => {
 // Delete Logic
 $("btn-delete-element")?.addEventListener("click", () => {
   if (!state.selectedElement) return;
+  saveUndoState();
   state.selectedElement.remove();
   state.selectedElement = null;
   updateSelectionBox();
@@ -993,6 +1069,7 @@ $("scan-pdf-input")?.addEventListener("change", async (e) => {
       initVectorEditor();
       $("page-indicator").textContent = `Page 1 / ${data.total_pages} (編集モード)`;
       showAILog(`Page 1: ${tData.spec.zones?.length || 0}要素検出`, "ai-step-logs");
+      autoSave();
     } catch (tErr) {
       showPreviewPage(1);
       showAILog(`テンプレート化失敗: ${tErr.message}`, "ai-step-logs");
@@ -1119,6 +1196,65 @@ $("ghost-opacity-slider")?.addEventListener("input", (e) => {
   const ghostLayer = svgCanvas.querySelector('#ghost-layer');
   if (ghostLayer) ghostLayer.setAttribute('opacity', val / 100);
   state.ghostVisible = val > 0;
+});
+
+// PDF Export
+$("export-pdf")?.addEventListener("click", () => {
+  const svgEl = $('main-svg');
+  const svgData = new XMLSerializer().serializeToString(svgEl);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  img.onload = () => {
+    canvas.width = img.width * 2;
+    canvas.height = img.height * 2;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    const pdf = new jsPDF({ orientation: canvas.width > canvas.height ? 'landscape' : 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, canvas.width, canvas.height);
+    pdf.save('design-export.pdf');
+  };
+  img.src = url;
+});
+
+// PNG Export
+$("export-png")?.addEventListener("click", () => {
+  const svgEl = $('main-svg');
+  const svgData = new XMLSerializer().serializeToString(svgEl);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  img.onload = () => {
+    canvas.width = img.width * 2;
+    canvas.height = img.height * 2;
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'design-export.png';
+    a.click();
+  };
+  img.src = url;
+});
+
+// SVG Export
+$("export-svg")?.addEventListener("click", () => {
+  const svgEl = $('main-svg');
+  const svgData = new XMLSerializer().serializeToString(svgEl);
+  const blob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'design-export.svg';
+  a.click();
+  URL.revokeObjectURL(a.href);
 });
 
 // IDML Export
@@ -1370,6 +1506,88 @@ svgCanvas.addEventListener('mouseup', (e) => {
   document.querySelector('.al-tool-btn[data-tool="select"]')?.click();
 });
 
+// ===================================================================
+// Zoom & Pan
+// ===================================================================
+state.zoom = 1;
+state.panX = 0;
+state.panY = 0;
+
+canvasContainer?.addEventListener('wheel', (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    state.zoom = Math.max(0.2, Math.min(5, state.zoom * delta));
+    applyZoom();
+  }
+}, { passive: false });
+
+function applyZoom() {
+  svgCanvas.style.transform = `scale(${state.zoom})`;
+  svgCanvas.style.transformOrigin = 'top left';
+}
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === '0') {
+    e.preventDefault();
+    state.zoom = 1;
+    applyZoom();
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === '=') {
+    e.preventDefault();
+    state.zoom = Math.min(5, state.zoom * 1.2);
+    applyZoom();
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === '-') {
+    e.preventDefault();
+    state.zoom = Math.max(0.2, state.zoom / 1.2);
+    applyZoom();
+  }
+});
+
+// ===================================================================
+// Auto-save to localStorage
+// ===================================================================
+function autoSave() {
+  if (!state.scanId) return;
+  const saveData = {
+    scanId: state.scanId,
+    totalPages: state.scanTotalPages,
+    designPages: state.designPages,
+    currentPageIndex: state.currentPageIndex,
+    timestamp: Date.now()
+  };
+  try {
+    localStorage.setItem('ai-creator-autosave', JSON.stringify(saveData));
+  } catch (e) {
+    console.warn('Auto-save failed:', e);
+  }
+}
+
+function loadAutoSave() {
+  try {
+    const saved = localStorage.getItem('ai-creator-autosave');
+    if (!saved) return false;
+    const data = JSON.parse(saved);
+    if (Date.now() - data.timestamp > 24 * 60 * 60 * 1000) return false; // Expire after 24h
+    if (!data.designPages || data.designPages.length === 0) return false;
+
+    state.scanId = data.scanId;
+    state.scanTotalPages = data.totalPages;
+    state.designPages = data.designPages;
+    state.currentPageIndex = data.currentPageIndex || 0;
+    state.previewMode = false;
+    updatePageUI();
+    syncLayersPanel();
+    initVectorEditor();
+    $("page-indicator").textContent = `Page ${state.currentPageIndex + 1} / ${data.totalPages} (復元)`;
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // Final initialization
 initVectorEditor();
+loadAutoSave();
 showScreen("screen-top");
