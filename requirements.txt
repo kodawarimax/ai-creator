@@ -1,0 +1,8 @@
+flask
+flask-cors
+PyMuPDF
+Pillow
+requests
+gunicorn
+python-dotenv
+google-genai

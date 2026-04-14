@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AIクリエイター Studio</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- 著作権警告バナー -->
+<div class="copyright-banner">
+  ⚠️ 著作権リスク注意：既存の作家名・作品名・キャラクター名の入力は禁止です。オリジナル設定のみ使用してください。
+</div>
+
+<!-- ===== AIクリエイター トップ画面 ===== -->
+<div class="screen active" id="screen-top">
+  <div class="welcome-content">
+    <div class="welcome-icon">🎨</div>
+    <h1>AIクリエイター Studio</h1>
+    <p class="welcome-desc">Gemini × Imagen × NotebookLM で創造する</p>
+    <div class="mode-selector top-tool-selector">
+      <button class="mode-card" id="btn-tool-manga">
+        <div class="mode-icon">📖</div>
+        <div class="mode-title">AI漫画クリエイター</div>
+        <div class="mode-desc">Q&A形式・フォーム形式で<br>プロ品質の漫画を自動生成</div>
+      </button>
+      <button class="mode-card" id="btn-tool-slide">
+        <div class="mode-icon">📊</div>
+        <div class="mode-title">AIスライドクリエイター</div>
+        <div class="mode-desc">NotebookLM でプロ品質の<br>スライドを自動生成</div>
+      </button>
+      <button class="mode-card" id="btn-tool-design">
+        <div class="mode-icon">🎨</div>
+        <div class="mode-title">AIデザインクリエイター</div>
+        <div class="mode-desc">PDF解析・SVGエディターで<br>プロ品質のデザインを制作</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ウェルカム画面（AI漫画） ===== -->
+<div class="screen" id="screen-welcome">
+  <div class="welcome-content">
+    <div class="welcome-back-row">
+      <button class="btn-back-welcome" id="manga-btn-back-top">← ツール選択に戻る</button>
+    </div>
+    <div class="welcome-icon">📖</div>
+    <h1>AI漫画クリエイター</h1>
+    <p class="welcome-desc">Claude × Imagen × NotebookLM で漫画を自動制作</p>
+    <div class="mode-selector">
+      <button class="mode-card" id="btn-mode-qa">
+        <div class="mode-icon">💬</div>
+        <div class="mode-title">Q&A形式（かんたん）</div>
+        <div class="mode-desc">質問に答えるだけで<br>全自動生成</div>
+        <div class="mode-badge">おすすめ</div>
+      </button>
+      <button class="mode-card" id="btn-mode-form">
+        <div class="mode-icon">📝</div>
+        <div class="mode-title">フォーム形式（詳細）</div>
+        <div class="mode-desc">4ステップで細かく<br>設定・調整できる</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Q&A 画面 ===== -->
+<div class="screen" id="screen-qa">
+  <div class="qa-container">
+    <div class="progress-area">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <span class="progress-label" id="progress-label">1 / 9</span>
+    </div>
+    <div class="question-card" id="question-card">
+      <div class="question-number" id="q-number">質問 1</div>
+      <div class="question-text" id="q-text"></div>
+      <div class="choices-grid" id="choices-grid"></div>
+      <div class="custom-input-area" id="custom-input-area" style="display:none">
+        <input type="text" id="custom-input" placeholder="自由に入力してください" />
+        <button class="btn-confirm" id="btn-custom-confirm">決定 →</button>
+      </div>
+      <div class="selected-badge hidden" id="selected-badge">
+        <span id="selected-value"></span>
+        <button class="btn-change" id="btn-change">変更</button>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn-back" id="btn-back">← 戻る</button>
+        <button class="btn-next-q hidden" id="btn-next-q">次へ →</button>
+      </div>
+    </div>
+    <div class="answers-summary" id="answers-summary"></div>
+    <div class="generate-area hidden" id="generate-area">
+      <div class="all-done-message">🎉 全ての設定が完了しました！</div>
+      <div class="generate-buttons">
+        <button class="btn-generate" id="btn-generate-all">
+          <span>漫画を自動生成する</span>
+          <span class="btn-sub">ストーリー → 画像 → スライド（全部込み）</span>
+        </button>
+        <button class="btn-prompts-only" id="btn-prompts-only">
+          <span>📋 プロンプトのみ出力</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 生成中画面 ===== -->
+<div class="screen" id="screen-generating">
+  <div class="generating-content">
+    <div class="gen-steps">
+      <div class="gen-step" id="gen-step-1"><div class="gen-step-icon">✨</div><div class="gen-step-label">ストーリー</div><div class="gen-step-status">待機中</div></div>
+      <div class="gen-arrow">→</div>
+      <div class="gen-step" id="gen-step-2"><div class="gen-step-icon">🎬</div><div class="gen-step-label">コマ割り</div><div class="gen-step-status">待機中</div></div>
+      <div class="gen-arrow">→</div>
+      <div class="gen-step" id="gen-step-3"><div class="gen-step-icon">🎨</div><div class="gen-step-label">画像生成</div><div class="gen-step-status">待機中</div></div>
+      <div class="gen-arrow">→</div>
+      <div class="gen-step" id="gen-step-4"><div class="gen-step-icon">📓</div><div class="gen-step-label">NotebookLM</div><div class="gen-step-status">待機中</div></div>
+    </div>
+    <div class="gen-message" id="gen-message">準備中...</div>
+    <div class="gen-spinner"></div>
+    <div id="ai-logs" class="ai-reasoning-log"></div>
+  </div>
+</div>
+
+<!-- ===== デザインクリエイター (Affinity Lite 統合) ===== -->
+<div class="screen" id="screen-design">
+  <header class="al-navbar al-glass">
+    <div class="al-nav-left">
+      <button id="design-btn-back" class="btn-back-mini">← 戻る</button>
+      <div class="al-page-switcher" id="page-switcher">
+        <button id="btn-page-prev">◀</button>
+        <span id="page-indicator">Page 1 / 1</span>
+        <button id="btn-page-next">▶</button>
+      </div>
+    </div>
+    <div class="al-nav-center">
+      <button id="btn-scan-magazine" class="al-secondary" style="background:#E8A020;color:#fff;">📄 PDF取込</button>
+      <button id="btn-ghost-toggle" class="al-secondary-mini">👻 参照ON</button>
+      <button id="btn-magic-fill" class="al-secondary">✨ AI Autofill</button>
+      <button id="btn-ai-layout" class="al-secondary">AIデザイン</button>
+    </div>
+    <div class="al-nav-right">
+      <div class="al-dropdown">
+        <button id="btn-export-main" class="al-primary">Export ▼</button>
+        <div class="al-dropdown-content al-glass">
+          <button id="export-pdf">PDF (Print)</button>
+          <button id="export-png">PNG (Image)</button>
+          <button id="export-svg">SVG (Vector)</button>
+          <button id="export-idml">IDML (InDesign)</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hidden inputs & workspace PDF loader -->
+  <div style="display:none">
+    <select id="workspace-pdf-select"><option value="">—</option><option value="press_231.pdf">press_231.pdf</option></select>
+    <button id="btn-load-workspace-pdf">Load</button>
+    <textarea id="theme-prompt"></textarea>
+    <button id="btn-sync-styles">Sync</button>
+    <input type="color" id="style-primary" value="#007AFF">
+    <select id="style-font-headline"><option value="YuGothic">YuGothic</option></select>
+    <button id="btn-style-learn">Style</button>
+    <button id="btn-lp-design">LP</button>
+    <button id="btn-video-editor">Video</button>
+  </div>
+
+  <main class="al-workspace">
+    <aside class="al-toolbar al-glass">
+      <button class="al-tool-btn active" data-tool="select" title="Select (V)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg></button>
+      <button class="al-tool-btn" data-tool="rect" title="Rect (M)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg></button>
+      <button class="al-tool-btn" data-tool="text" title="Text (T)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></button>
+      <button class="al-tool-btn" data-tool="image" title="Image (I)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>
+      <hr>
+      <button class="al-tool-btn" id="btn-align-left" title="Align Left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20M8 5h10v3H8V5zm0 8h7v3H8v-3z"/></svg></button>
+      <button class="al-tool-btn" id="btn-align-center" title="Align Center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M7 5h10v3H7V5zm3 8h4v3h-4v-3z"/></svg></button>
+    </aside>
+
+    <section class="al-canvas-container" id="canvas-container">
+      <svg id="main-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 297" width="420mm" height="297mm">
+        <rect x="0" y="0" width="420" height="297" fill="#FFFFFF" id="bg-rect" />
+        <g id="guides-group">
+          <rect id="guide-bleed" x="-3" y="-3" width="426" height="303" fill="none" stroke="#FF4444" stroke-width="0.3" stroke-dasharray="1,1" />
+          <rect id="guide-margin" x="10" y="10" width="400" height="277" fill="none" stroke="#44BBFF" stroke-width="0.3" />
+        </g>
+      </svg>
+      <div id="selection-box" class="al-selection-box hidden">
+        <div class="al-handle al-nw"></div><div class="al-handle al-ne"></div>
+        <div class="al-handle al-sw"></div><div class="al-handle al-se"></div>
+        <div class="al-handle al-n"></div><div class="al-handle al-e"></div>
+        <div class="al-handle al-s"></div><div class="al-handle al-w"></div>
+      </div>
+      <!-- Templatize Button (overlay on canvas) -->
+      <button id="btn-templatize" class="btn-templatize hidden">🪄 テンプレート化</button>
+      <!-- Filmstrip -->
+      <div id="filmstrip" class="filmstrip hidden"></div>
+    </section>
+
+    <aside class="al-right-panels">
+      <!-- Design Spec Panel (Magazine Scan) -->
+      <div class="al-panel al-glass hidden" id="design-spec-panel">
+        <div class="panel-header"><h3>Design Spec</h3></div>
+        <div class="spec-section">
+          <h4>Color Palette</h4>
+          <div class="spec-palette-grid" id="spec-palette"></div>
+        </div>
+        <div class="spec-section">
+          <h4>Typography</h4>
+          <div class="spec-typography-list" id="spec-typography"></div>
+        </div>
+        <div class="spec-section">
+          <h4>Page Types</h4>
+          <div class="spec-page-types" id="spec-page-types"></div>
+        </div>
+      </div>
+
+      <div class="al-panel al-glass" id="layers-panel">
+        <div class="panel-header"><h3>Layers</h3><button id="btn-group-elements" title="Group (Cmd+G)">📦</button></div>
+        <div class="layers-list" id="layers-list">
+          <div class="layer-item placeholder">No elements</div>
+        </div>
+      </div>
+      <div class="al-panel al-glass" id="properties-panel">
+        <!-- Text Toolbar: only visible when a text element is selected -->
+        <div class="text-toolbar" id="text-toolbar" style="display:none">
+          <h3 style="width:100%;margin-bottom:6px;font-size:11px;text-transform:uppercase;color:var(--text-muted)">Text</h3>
+          <div class="prop-row">
+            <select id="prop-font-family" style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:white;border-radius:4px;font-size:12px;padding:3px 5px;">
+              <option value="YuGothic">YuGothic</option>
+              <option value="'Hiragino Sans'">Hiragino Sans</option>
+              <option value="'Hiragino Mincho ProN'">Hiragino Mincho</option>
+              <option value="'Noto Sans JP'">Noto Sans JP</option>
+              <option value="serif">serif</option>
+            </select>
+            <input type="number" id="prop-font-size" min="1" step="0.5" value="12" style="width:56px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:white;border-radius:4px;font-size:12px;padding:3px 5px;">
+          </div>
+          <div class="prop-row" style="margin-top:6px;">
+            <button class="toolbar-btn" id="btn-bold" title="Bold"><b>B</b></button>
+            <button class="toolbar-btn" id="btn-italic" title="Italic"><i>I</i></button>
+            <button class="toolbar-btn" id="btn-align-l" title="Align Left">&#8676;</button>
+            <button class="toolbar-btn" id="btn-align-c" title="Align Center">&#8677;</button>
+            <button class="toolbar-btn" id="btn-align-r" title="Align Right">&#8677;</button>
+            <label style="font-size:11px;margin-left:auto;display:flex;align-items:center;gap:4px;">
+              <input type="color" id="prop-text-color" value="#000000" style="width:24px;height:24px;border:none;padding:0;background:none;cursor:pointer;">
+            </label>
+          </div>
+          <div class="al-prop-group" style="margin-top:8px;"><label>Text Content</label><textarea id="prop-text-content" rows="3"></textarea></div>
+        </div>
+        <hr id="text-toolbar-hr" style="display:none">
+
+        <h3>Transform</h3>
+        <div class="al-prop-grid">
+          <div class="al-prop-group"><label>X</label><input type="number" id="prop-x" step="0.5"></div>
+          <div class="al-prop-group"><label>Y</label><input type="number" id="prop-y" step="0.5"></div>
+          <div class="al-prop-group"><label>W</label><input type="number" id="prop-w" step="0.5"></div>
+          <div class="al-prop-group"><label>H</label><input type="number" id="prop-h" step="0.5"></div>
+        </div>
+        <hr>
+        <h3>Fill / Stroke</h3>
+        <div class="prop-row" style="gap:8px;margin-bottom:6px;">
+          <div class="al-prop-group" style="flex:1"><label>Fill</label><input type="color" id="prop-fill" value="#000000"><input type="text" id="prop-fill-hex" value="#000000" maxlength="7"></div>
+        </div>
+        <div class="prop-row" style="gap:8px;">
+          <div class="al-prop-group" style="flex:1"><label>Stroke</label><input type="color" id="prop-stroke" value="#000000"></div>
+          <div class="al-prop-group" style="flex:1"><label>Stroke W</label><input type="number" id="prop-stroke-width" min="0" step="0.1" value="0" style="width:56px;"></div>
+        </div>
+        <hr>
+        <div class="prop-row" style="gap:8px;margin-top:4px;">
+          <button id="btn-delete-element" class="al-btn-danger" style="flex:1">Delete</button>
+          <button id="btn-duplicate" class="al-btn-secondary" style="flex:1">Duplicate</button>
+        </div>
+        <hr>
+        <h3>参照透明度</h3>
+        <div class="al-prop-group">
+          <input type="range" id="ghost-opacity-slider" min="0" max="100" value="30" style="width:100%">
+          <span id="ghost-opacity-label">30%</span>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- AI Processing Overlay -->
+  <div id="ai-loading" class="al-ai-loading hidden al-glass">
+    <div class="al-spinner"></div>
+    <h2 id="ai-loading-title">AI Processing...</h2>
+    <div class="al-progress-container"><div id="ai-progress-bar" class="al-progress-bar-design"></div></div>
+    <p id="ai-status">Analysing layout and semantics with Gemini Flash 2.5...</p>
+    <div id="ai-step-logs" class="al-mini-log"></div>
+  </div>
+
+  <input type="file" id="pdf-input" accept=".pdf" style="display: none;">
+  <input type="file" id="scan-pdf-input" accept=".pdf" style="display: none;">
+  <input type="file" id="image-replace-input" accept="image/*" style="display:none">
+</div>
+
+<div id="element-context-menu" class="context-menu hidden">
+  <button data-action="edit">✏️ テキスト編集</button>
+  <button data-action="replace-image">🖼 画像を差し替え</button>
+  <hr>
+  <button data-action="bring-front">⬆ 最前面へ</button>
+  <button data-action="send-back">⬇ 最背面へ</button>
+  <button data-action="bring-forward">↑ 前面へ</button>
+  <button data-action="send-backward">↓ 背面へ</button>
+  <hr>
+  <button data-action="duplicate">📋 複製</button>
+  <button data-action="delete">🗑 削除</button>
+</div>
+<div class="element-tooltip hidden" id="element-tooltip"></div>
+
+<!-- Modal Placeholders -->
+<div id="lp-design-modal" class="al-modal-overlay hidden"></div>
+<div id="video-editor-modal" class="al-modal-overlay hidden">
+  <div class="al-modal al-glass">
+    <div class="modal-header">
+      <h2>🎬 Video Production Studio</h2>
+      <button class="btn-close-modal" id="btn-close-video">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="video-preview-placeholder">
+        <div class="preview-msg">Preparing Motion Preview...</div>
+      </div>
+      <div class="video-settings">
+        <div class="al-prop-group">
+          <label>Animation Preset</label>
+          <select id="video-preset">
+            <option value="cinematic">Cinematic (Slow Pan/Zoom)</option>
+            <option value="energetic">Energetic (Quick Slide)</option>
+            <option value="minimal">Minimal (Simple Fade)</option>
+          </select>
+        </div>
+        <div class="al-prop-group">
+          <label>Duration</label>
+          <select id="video-duration">
+            <option value="5">5 Seconds (Short)</option>
+            <option value="10" selected>10 Seconds (Standard)</option>
+            <option value="15">15 Seconds (Full)</option>
+          </select>
+        </div>
+        <button id="btn-trigger-render" class="btn-primary-magic">🚀 Start MP4 Export</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>
