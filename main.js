@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 // ===== Config =====
 const API_BASE = window.location.hostname === 'localhost'
   ? "http://localhost:5051"
-  : "http://72.61.119.101";
+  : "https://srv1334941.hstgr.cloud";
 
 // ===== State =====
 const state = {

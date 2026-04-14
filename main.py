@@ -4,7 +4,7 @@ from flask_cors import CORS
 
 def create_app():
     app = Flask(__name__, static_folder='.', static_url_path='')
-    CORS(app, origins=["http://localhost:5173", "http://localhost:5174", "https://kodawarimax.github.io", "http://72.61.119.101"])
+    CORS(app, origins=["http://localhost:5173", "http://localhost:5174", "https://kodawarimax.github.io", "https://srv1334941.hstgr.cloud"])
 
     # Register Blueprints (to be created)
     from routers.manga import manga_bp
