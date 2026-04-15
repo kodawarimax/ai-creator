@@ -617,6 +617,29 @@ g.selectable { transition: outline 0.1s; }
 
 .snap-guide-line { pointer-events: none; }
 
+/* ===== API Status Indicator ===== */
+.api-status {
+  position: fixed; top: 30px; right: 14px; z-index: 920;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  font-family: var(--font-body); font-size: 11px;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.api-status-dot {
+  width: 7px; height: 7px; border-radius: 999px;
+  background: var(--text-muted);
+  box-shadow: 0 0 6px currentColor;
+}
+.api-status[data-state="ok"] { color: var(--success); border-color: rgba(74,247,160,0.3); }
+.api-status[data-state="ok"] .api-status-dot { background: var(--success); }
+.api-status[data-state="warn"] { color: var(--warning); border-color: rgba(247,200,74,0.3); }
+.api-status[data-state="warn"] .api-status-dot { background: var(--warning); }
+.api-status[data-state="err"] { color: var(--danger); border-color: rgba(247,106,106,0.3); }
+.api-status[data-state="err"] .api-status-dot { background: var(--danger); }
+
 /* ===== Feedback Floating Action Button ===== */
 .feedback-fab {
   position: fixed; bottom: 20px; right: 20px; z-index: 900;
