@@ -17,13 +17,89 @@
   ⚠️ 著作権リスク注意：既存の作家名・作品名・キャラクター名の入力は禁止です。オリジナル設定のみ使用してください。
 </div>
 
-<!-- フィードバックボタン（外部デザイナー向け） -->
-<a href="https://github.com/kodawarimax/ai-creator/issues/new/choose"
-   target="_blank" rel="noopener noreferrer"
-   class="feedback-fab" title="デザインフィードバックを送る">
+<!-- フィードバックウィジェット（外部デザイナー向け） -->
+<button type="button" class="feedback-fab" id="feedback-fab" title="このセクションにコメントを送る">
   <span class="feedback-icon">💬</span>
   <span class="feedback-label">フィードバック</span>
-</a>
+  <span class="feedback-count" id="feedback-count" hidden>0</span>
+</button>
+
+<div class="feedback-panel" id="feedback-panel" hidden>
+  <div class="feedback-panel-header">
+    <div class="feedback-panel-title">
+      <span>💬 フィードバック</span>
+      <span class="feedback-section-tag" id="feedback-section-tag">—</span>
+    </div>
+    <button type="button" class="feedback-panel-close" id="feedback-panel-close" aria-label="閉じる">✕</button>
+  </div>
+  <div class="feedback-tabs">
+    <button type="button" class="feedback-tab active" data-tab="new">コメント追加</button>
+    <button type="button" class="feedback-tab" data-tab="list">一覧 (<span id="feedback-list-count">0</span>)</button>
+  </div>
+
+  <div class="feedback-tab-pane active" id="feedback-pane-new">
+    <label class="feedback-label-row">
+      対象セクション
+      <select id="feedback-section-select">
+        <option value="top">トップ画面（ツール選択）</option>
+        <option value="manga-welcome">漫画: モード選択</option>
+        <option value="manga-qa">漫画: Q&A</option>
+        <option value="manga-generating">漫画: 生成中</option>
+        <option value="design-editor">デザインエディタ</option>
+        <option value="slide">スライド</option>
+        <option value="global">全体（複数画面に共通）</option>
+      </select>
+    </label>
+
+    <div class="feedback-rating-row">
+      <span>評価</span>
+      <div class="feedback-stars" id="feedback-stars" role="radiogroup" aria-label="評価">
+        <button type="button" data-v="1" aria-label="1つ星">★</button>
+        <button type="button" data-v="2" aria-label="2つ星">★</button>
+        <button type="button" data-v="3" aria-label="3つ星">★</button>
+        <button type="button" data-v="4" aria-label="4つ星">★</button>
+        <button type="button" data-v="5" aria-label="5つ星">★</button>
+      </div>
+    </div>
+
+    <label class="feedback-label-row">
+      カテゴリ
+      <select id="feedback-category">
+        <option value="layout">レイアウト / 配置</option>
+        <option value="color">カラー / コントラスト</option>
+        <option value="typography">タイポグラフィ</option>
+        <option value="interaction">インタラクション</option>
+        <option value="flow">情報設計 / 導線</option>
+        <option value="responsive">モバイル / レスポンシブ</option>
+        <option value="a11y">アクセシビリティ</option>
+        <option value="other">その他</option>
+      </select>
+    </label>
+
+    <label class="feedback-label-row">
+      コメント
+      <textarea id="feedback-comment" rows="4" placeholder="気づいた点・提案を自由に（空欄不可）"></textarea>
+    </label>
+
+    <div class="feedback-actions">
+      <button type="button" class="fb-btn-secondary" id="feedback-clear">クリア</button>
+      <button type="button" class="fb-btn-primary" id="feedback-save">追加（ローカル保存）</button>
+    </div>
+    <p class="feedback-hint">ブラウザに一時保存されます。最後に「一覧」タブからまとめて送信できます。</p>
+  </div>
+
+  <div class="feedback-tab-pane" id="feedback-pane-list">
+    <div class="feedback-list" id="feedback-list"></div>
+    <div class="feedback-actions feedback-actions-end">
+      <button type="button" class="fb-btn-secondary" id="feedback-copy">📋 コピー</button>
+      <button type="button" class="fb-btn-secondary" id="feedback-delete-all">🗑 全削除</button>
+      <button type="button" class="fb-btn-primary" id="feedback-submit-github">🚀 GitHub Issueで送信</button>
+    </div>
+    <p class="feedback-hint">送信するとGitHub Issue作成画面が開き、本文が自動入力されます。</p>
+  </div>
+
+  <div class="feedback-toast" id="feedback-toast" hidden></div>
+</div>
 
 <!-- ===== AIクリエイター トップ画面 ===== -->
 <div class="screen active" id="screen-top">
@@ -375,5 +451,6 @@
 </div>
 
 <script type="module" src="./main.js"></script>
+<script type="module" src="./feedback-widget.js"></script>
 </body>
 </html>
