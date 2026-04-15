@@ -1,0 +1,42 @@
+name: 🐛 バグ報告
+description: 機能的な不具合の報告
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待される動作
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: ブラウザ / 環境
+      placeholder: "例: Chrome 131 / macOS Sonoma"
+
+  - type: textarea
+    id: console
+    attributes:
+      label: コンソールエラー（任意）
+      description: DevTools のコンソールログがあれば貼り付け
+      render: shell

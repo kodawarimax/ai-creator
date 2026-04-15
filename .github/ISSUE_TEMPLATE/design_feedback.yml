@@ -1,0 +1,80 @@
+name: 🎨 デザインフィードバック
+description: UI/UX・デザインに関する改善提案や問題報告
+title: "[Design] "
+labels: ["design", "feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ご協力ありがとうございます！外部デザイナー様からのフィードバックを歓迎します。
+        スクリーンショット添付を推奨します（ドラッグ&ドロップで画像追加可）。
+
+  - type: dropdown
+    id: screen
+    attributes:
+      label: 対象画面
+      options:
+        - トップ画面（ツール選択）
+        - AI漫画クリエイター / Q&A
+        - AI漫画クリエイター / フォーム
+        - AIスライドクリエイター
+        - AIデザインクリエイター（エディタ）
+        - 生成中画面
+        - その他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: カテゴリ
+      options:
+        - レイアウト崩れ / 表示バグ
+        - カラー / コントラスト
+        - タイポグラフィ
+        - インタラクション / ホバー / アニメーション
+        - 情報設計 / 導線
+        - モバイル / レスポンシブ
+        - アクセシビリティ
+        - その他
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 問題・提案の内容
+      placeholder: |
+        例: トップ画面のカードが縦に並んでいるが、デスクトップでは横並びのほうが一目で把握しやすい
+      value: |
+        **現状:**
+
+        **期待する状態 / 提案:**
+
+        **理由:**
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: スクリーンショット（任意）
+      description: ドラッグ&ドロップで画像を貼り付けてください
+
+  - type: input
+    id: browser
+    attributes:
+      label: ブラウザ / 環境
+      placeholder: "例: Chrome 131 / macOS Sonoma / MacBook Pro 14inch"
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 重要度
+      options:
+        - "🔴 Critical - 使用不能"
+        - "🟠 High - 重大な影響"
+        - "🟡 Medium - 改善すべき"
+        - "🟢 Low - nice to have"
+    validations:
+      required: true
