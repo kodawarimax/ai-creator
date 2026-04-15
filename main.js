@@ -2,11 +2,7 @@
 import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
 import { createClient } from '@supabase/supabase-js';
-
-// ===== Config =====
-const API_BASE = window.location.hostname === 'localhost'
-  ? "http://localhost:5051"
-  : "https://srv1334941.hstgr.cloud";
+import { apiFetch, API_BASE } from './src/api-client.js';
 
 // ===== State =====
 const state = {
@@ -111,7 +107,7 @@ $("btn-load-workspace-pdf")?.addEventListener("click", () => {
   loadingOverlay.classList.remove("hidden");
   $("ai-status").textContent = `⚡️ Loading ${filename} from project workspace...`;
   
-  fetch(`${API_BASE}/api/design/project-load`, {
+  apiFetch(`/api/design/project-load`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ filename })
@@ -699,7 +695,7 @@ async function autoTemplatizeAndShow(pageIdx) {
     loadingOverlay.classList.remove('hidden');
     $('ai-status').textContent = `Page ${pageNum} をAI解析中...`;
     try {
-      const res = await fetch(`${API_BASE}/api/design/templatize/${state.scanId}/${pageNum}`, { method: 'POST' });
+      const res = await apiFetch(`/api/design/templatize/${state.scanId}/${pageNum}`, { method: 'POST' });
       if (!res.ok) throw new Error(`Templatize error: ${res.status}`);
       const data = await res.json();
       state.designPages[pageIdx] = data.svg;
@@ -1178,7 +1174,7 @@ $("btn-magic-fill")?.addEventListener("click", async () => {
   showAILog(`Applying theme: "${theme}" to ${elements.length} elements.`);
 
   try {
-    const res = await fetch(`${API_BASE}/api/magic/autofill`, {
+    const res = await apiFetch(`/api/magic/autofill`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ theme, elements })
@@ -1257,7 +1253,7 @@ $("btn-trigger-render")?.addEventListener("click", async () => {
   showAILog(`🚀 Rendering ${duration}s video (Preset: ${preset})...`);
 
   try {
-    const res = await fetch(`${API_BASE}/api/video/render`, {
+    const res = await apiFetch(`/api/video/render`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ elements, page_num: state.currentPage, preset, duration })
@@ -1278,7 +1274,7 @@ $("btn-trigger-render")?.addEventListener("click", async () => {
 async function pollRenderStatus(jobId) {
   const check = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/video/status/${jobId}`);
+      const res = await apiFetch(`/api/video/status/${jobId}`);
       const data = await res.json();
       if (data.status === "complete") {
         showAILog("🎉 Video Ready! Downloading...");
@@ -1314,7 +1310,7 @@ $("scan-pdf-input")?.addEventListener("change", async (e) => {
 
   try {
     // Phase 1: Instant preview (no AI, <1s)
-    const res = await fetch(`${API_BASE}/api/design/preview-pdf`, { method: 'POST', body: formData });
+    const res = await apiFetch(`/api/design/preview-pdf`, { method: 'POST', body: formData });
     if (!res.ok) throw new Error(`Server Error: ${res.status}`);
     const data = await res.json();
 
@@ -1333,7 +1329,7 @@ $("scan-pdf-input")?.addEventListener("change", async (e) => {
     $('ai-status').textContent = "ページ1の要素を抽出中...";
     showAILog("ページ1の要素を抽出中...", "ai-step-logs");
     try {
-      const tRes = await fetch(`${API_BASE}/api/design/templatize/${data.scan_id}/1`, { method: 'POST' });
+      const tRes = await apiFetch(`/api/design/templatize/${data.scan_id}/1`, { method: 'POST' });
       if (!tRes.ok) throw new Error(`Templatize error: ${tRes.status}`);
       const tData = await tRes.json();
       state.previewMode = false;
@@ -1408,7 +1404,7 @@ function showPreviewPage(pageNum) {
 // Phase 2: Design System (background)
 async function extractDesignSystem(scanId) {
   try {
-    const res = await fetch(`${API_BASE}/api/design/extract-design-system/${scanId}`, { method: 'POST' });
+    const res = await apiFetch(`/api/design/extract-design-system/${scanId}`, { method: 'POST' });
     if (!res.ok) throw new Error(`Design system error: ${res.status}`);
     const data = await res.json();
     state.designSpec = data.design_system;
@@ -1430,7 +1426,7 @@ $("btn-templatize")?.addEventListener("click", async () => {
   showAILog(`AI Visionでページ ${pageNum} を分析中...`, "ai-step-logs");
 
   try {
-    const res = await fetch(`${API_BASE}/api/design/templatize/${state.scanId}/${pageNum}`, { method: 'POST' });
+    const res = await apiFetch(`/api/design/templatize/${state.scanId}/${pageNum}`, { method: 'POST' });
     if (!res.ok) throw new Error(`Templatize error: ${res.status}`);
     const data = await res.json();
 
@@ -1537,7 +1533,7 @@ $("export-idml")?.addEventListener("click", async () => {
   if (!state.scanId) return alert("先にPDFをスキャンしてください");
   showAILog("IDML生成中...");
   try {
-    const res = await fetch(`${API_BASE}/api/design/export-idml/${state.scanId}`);
+    const res = await apiFetch(`/api/design/export-idml/${state.scanId}`);
     if (!res.ok) throw new Error(`Export error: ${res.status}`);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);

@@ -23,6 +23,8 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npx vite build
+        env:
+          VITE_API_TOKEN: ${{ secrets.VITE_API_TOKEN }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
