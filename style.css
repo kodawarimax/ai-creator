@@ -36,12 +36,7 @@ html, body {
 .screen { display: none; }
 .screen.active { display: flex; flex-direction: column; min-height: 100vh; }
 
-/* ===== Copyright Banner ===== */
-.copyright-banner {
-  background: linear-gradient(90deg, #8B0000, #A0522D);
-  color: #fff; text-align: center; padding: 6px 16px; font-size: 12px;
-  position: sticky; top: 0; z-index: 999;
-}
+/* Copyright Banner は line 164 で定義（重複削除） */
 
 /* ===== Top Screen ===== */
 .welcome-content {
@@ -176,12 +171,8 @@ html, body {
   z-index: 1000;
 }
 
-/* ===== Screens ===== */
-.screen {
-  display: none;
-  min-height: 100vh;
-  padding-top: 36px;
-}
+/* .screen は line 36 で定義済み — 重複削除 */
+body { padding-top: 26px; } /* copyright-banner (fixed) 用のオフセット */
 .screen.al-navbar { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 1000; }
 .al-nav-controls { display: flex; align-items: center; gap: 12px; }
 
@@ -224,7 +215,7 @@ html, body {
 .al-toolbar { width: 64px; display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 12px; border-right: 1px solid rgba(255,255,255,0.1); }
 .al-tool-btn { width: 40px; height: 40px; border-radius: 8px; border: none; background: transparent; color: var(--text-dim); transition: 0.2s; }
 .al-tool-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-.al-tool-btn.active { background: var(--accent); color: #fff; box-shadow: 0 0 15px rgba(0,240,255,0.3); }
+/* .al-tool-btn.active は line 377 で定義（重複削除） */
 .al-toolbar hr { width: 30px; border: 0.5px solid rgba(255,255,255,0.1); margin: 4px 0; }
 
 .al-spinner {
@@ -233,7 +224,7 @@ html, body {
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: al-spin 1s infinite cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.2);
 }
 
 @keyframes al-spin { to { transform: rotate(360deg); } }
@@ -354,7 +345,7 @@ html, body {
 .al-page-switcher { display: flex; align-items: center; gap: 6px; }
 .al-page-switcher button { width: 28px; height: 28px; padding: 0; display: flex; align-items: center; justify-content: center; }
 .al-page-switcher span { font-size: 12px; color: #aaa; white-space: nowrap; }
-.al-primary { background: var(--accent, #00f0ff); color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
+.al-primary { background: var(--accent, #F59E0B); color: #000; border: none; padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; }
 .al-secondary { font-size: 12px !important; }
 .al-secondary-mini { font-size: 11px !important; padding: 4px 8px !important; }
 .al-dropdown { position: relative; }
@@ -374,7 +365,7 @@ html, body {
 }
 .al-tool-btn { width: 36px; height: 36px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .al-tool-btn:hover { background: rgba(255,255,255,0.08); }
-.al-tool-btn.active { background: var(--accent, #00f0ff); color: #000; }
+.al-tool-btn.active { background: var(--accent, #F59E0B); color: #000; box-shadow: 0 0 12px rgba(var(--accent-rgb), 0.4); }
 .al-toolbar hr { width: 24px; border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 4px 0; }
 
 .al-canvas-container {
@@ -404,8 +395,8 @@ html, body {
 .al-btn-danger { width: 100%; padding: 6px; border-radius: 4px; border: 1px solid rgba(255,80,80,0.3); background: rgba(255,80,80,0.1); color: #ff6b6b; cursor: pointer; font-size: 12px; }
 .al-btn-danger:hover { background: rgba(255,80,80,0.2); }
 
-.al-selection-box { position: absolute; border: 2px solid var(--accent, #00f0ff); pointer-events: none; z-index: 50; }
-.al-handle { position: absolute; width: 8px; height: 8px; background: var(--accent, #00f0ff); border-radius: 2px; }
+.al-selection-box { position: absolute; border: 2px solid var(--accent, #F59E0B); pointer-events: none; z-index: 50; }
+.al-handle { position: absolute; width: 8px; height: 8px; background: var(--accent, #F59E0B); border-radius: 2px; }
 .al-nw { top: -4px; left: -4px; cursor: nw-resize; pointer-events: all; } .al-ne { top: -4px; right: -4px; cursor: ne-resize; pointer-events: all; }
 .al-sw { bottom: -4px; left: -4px; cursor: sw-resize; pointer-events: all; } .al-se { bottom: -4px; right: -4px; cursor: se-resize; pointer-events: all; }
 .al-n { top: -4px; left: 50%; transform: translateX(-50%); cursor: n-resize; pointer-events: all; }
@@ -419,7 +410,7 @@ html, body {
 .layers-list { display: flex; flex-direction: column; gap: 2px; max-height: 150px; overflow-y: auto; }
 .layer-item { padding: 4px 8px; font-size: 11px; color: #aaa; border-radius: 4px; cursor: pointer; display: flex; align-items: center; }
 .layer-item:hover { background: rgba(255,255,255,0.06); }
-.layer-item.active { background: rgba(0,240,255,0.1); color: var(--accent); }
+.layer-item.active { background: rgba(var(--accent-rgb),0.1); color: var(--accent); }
 .layer-item.placeholder { color: #555; font-style: italic; }
 .layer-btn { background: none; border: none; cursor: pointer; font-size: 12px; padding: 2px; opacity: 0.6; }
 .layer-btn:hover { opacity: 1; }
@@ -447,7 +438,7 @@ html, body {
   font-size: 13px;
   transition: all 0.2s;
 }
-.btn-back-mini:hover { border-color: var(--accent); background: rgba(0, 240, 255, 0.05); }
+.btn-back-mini:hover { border-color: var(--accent); background: rgba(var(--accent-rgb), 0.05); }
 
 /* ===== Filmstrip (Page Thumbnails) ===== */
 .filmstrip {
@@ -463,7 +454,7 @@ html, body {
   position: relative; overflow: hidden;
 }
 .filmstrip-thumb:hover { transform: scale(1.05); }
-.filmstrip-thumb.active { border-color: var(--accent, #00f0ff); }
+.filmstrip-thumb.active { border-color: var(--accent, #F59E0B); }
 .filmstrip-thumb img { width: 100%; display: block; border-radius: 2px; }
 .filmstrip-thumb span {
   position: absolute; bottom: 2px; right: 4px;
@@ -509,8 +500,8 @@ g.selectable { transition: outline 0.1s; }
 .typo-detail { font-size: 10px; color: #999; }
 .page-type-badge {
   display: inline-block; font-size: 10px; padding: 2px 8px;
-  border-radius: 10px; background: rgba(0,240,255,0.1);
-  border: 1px solid rgba(0,240,255,0.3); color: var(--accent); margin: 2px;
+  border-radius: 10px; background: rgba(var(--accent-rgb),0.1);
+  border: 1px solid rgba(var(--accent-rgb),0.3); color: var(--accent); margin: 2px;
 }
 
 /* ... (Remaining Design and LP Styles) ... */
@@ -557,7 +548,7 @@ g.selectable { transition: outline 0.1s; }
   background: var(--accent);
   border-color: var(--accent);
   color: #000;
-  box-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
+  box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.35);
 }
 
 /* Context Menu */
@@ -579,7 +570,7 @@ g.selectable { transition: outline 0.1s; }
   padding: 7px 12px; text-align: left;
   cursor: pointer; border-radius: 4px;
 }
-.context-menu button:hover { background: rgba(0,240,255,0.1); color: #fff; }
+.context-menu button:hover { background: rgba(var(--accent-rgb),0.1); color: #fff; }
 .context-menu hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 3px 0; }
 
 /* Enhanced hover tooltip */
@@ -625,3 +616,22 @@ g.selectable { transition: outline 0.1s; }
 .breadcrumb-current { color: var(--text); font-weight: 500; }
 
 .snap-guide-line { pointer-events: none; }
+
+/* ===== Responsive (Mobile) ===== */
+@media (max-width: 480px) {
+  .welcome-content { padding: 28px 16px; }
+  .welcome-content h1 { font-size: 26px; letter-spacing: -0.5px; }
+  .welcome-desc { font-size: 14px; margin-bottom: 24px; }
+  .welcome-icon { font-size: 40px; }
+  .top-tool-selector { padding: 0 4px; gap: 10px; }
+  .top-tool-selector .mode-card { padding: 14px 16px; gap: 12px; }
+  .top-tool-selector .mode-icon { width: 40px; height: 40px; min-width: 40px; font-size: 20px; }
+  .top-tool-selector .mode-title { font-size: 14px; }
+  .top-tool-selector .mode-desc { font-size: 11px; line-height: 1.4; }
+  .mode-selector { gap: 10px; }
+  .mode-card { width: 100%; max-width: 320px; padding: 20px 18px; }
+  .qa-container { padding: 20px 14px; }
+  .question-card { padding: 20px 16px; }
+  .question-text { font-size: 16px; }
+  .btn-generate { padding: 14px 24px; font-size: 15px; }
+}
