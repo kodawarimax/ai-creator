@@ -23,17 +23,18 @@ function setStatus(key) {
 }
 
 async function probeAuth() {
-  if (!hasApiToken()) return setStatus('noToken');
   setStatus('checking');
   try {
     const res = await fetch(apiUrl('/health'));
     if (!res.ok) return setStatus('offline');
     const data = await res.json().catch(() => ({}));
     if (data.auth_enabled === false) return setStatus('ok');
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY) || '';
     const probe = await fetch(apiUrl('/api/templates'), {
-      headers: { 'X-API-Token': localStorage.getItem(TOKEN_STORAGE_KEY) || '' },
+      headers: token ? { 'X-API-Token': token } : {},
     });
-    if (probe.status === 401) return setStatus('unauth');
+    if (probe.ok) return setStatus('ok');
+    if (probe.status === 401) return setStatus(hasApiToken() ? 'unauth' : 'noToken');
     return setStatus('ok');
   } catch {
     return setStatus('offline');
