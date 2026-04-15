@@ -18,9 +18,40 @@
 </div>
 
 <!-- API接続ステータス（テスター向け） -->
-<div class="api-status" id="api-status" hidden>
+<button type="button" class="api-status" id="api-status" hidden title="クリックしてパスワードを入力">
   <span class="api-status-dot"></span>
   <span class="api-status-label" id="api-status-label">未接続</span>
+</button>
+
+<!-- パスワード入力モーダル -->
+<div class="pwd-modal" id="pwd-modal" hidden>
+  <div class="pwd-backdrop" data-close="1"></div>
+  <div class="pwd-card">
+    <div class="pwd-icon">🔐</div>
+    <h2 class="pwd-title">AI機能を有効化</h2>
+    <p class="pwd-desc">
+      管理者から共有されたパスワードを入力してください。<br>
+      UI評価のみの場合は「あとで」を押してそのまま使えます。
+    </p>
+    <form id="pwd-form">
+      <input
+        type="password"
+        id="pwd-input"
+        class="pwd-input"
+        placeholder="パスワード"
+        autocomplete="off"
+        autofocus
+      />
+      <div class="pwd-error" id="pwd-error" hidden></div>
+      <div class="pwd-actions">
+        <button type="button" class="pwd-btn-secondary" data-close="1">あとで</button>
+        <button type="submit" class="pwd-btn-primary">接続</button>
+      </div>
+    </form>
+    <button type="button" class="pwd-logout" id="pwd-logout" hidden>
+      🚪 ログアウト（保存を消去）
+    </button>
+  </div>
 </div>
 
 <!-- フィードバックウィジェット（外部デザイナー向け） -->

@@ -640,6 +640,104 @@ g.selectable { transition: outline 0.1s; }
 .api-status[data-state="err"] { color: var(--danger); border-color: rgba(247,106,106,0.3); }
 .api-status[data-state="err"] .api-status-dot { background: var(--danger); }
 
+.api-status {
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.api-status:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* ===== Password Modal ===== */
+.pwd-modal { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; }
+.pwd-modal[hidden] { display: none !important; }
+.pwd-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+}
+.pwd-card {
+  position: relative; z-index: 1;
+  width: 360px; max-width: calc(100vw - 32px);
+  background: var(--surface2);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 28px 24px 20px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  font-family: var(--font-body);
+  color: var(--text);
+  animation: pwdIn 0.2s ease-out;
+}
+@keyframes pwdIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.pwd-icon { font-size: 32px; margin-bottom: 8px; }
+.pwd-title {
+  font-family: var(--font-display);
+  font-size: 20px; font-weight: 600;
+  margin-bottom: 8px;
+}
+.pwd-desc {
+  font-size: 12px; color: var(--text-muted);
+  line-height: 1.6; margin-bottom: 20px;
+}
+.pwd-input {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pwd-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.2);
+}
+.pwd-error {
+  font-size: 12px; color: var(--danger);
+  margin-bottom: 8px; text-align: left;
+}
+.pwd-actions {
+  display: flex; gap: 8px; margin-top: 8px;
+}
+.pwd-btn-primary, .pwd-btn-secondary {
+  flex: 1; padding: 10px 14px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+.pwd-btn-primary {
+  background: var(--accent); color: #000; border: none;
+  box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.3);
+}
+.pwd-btn-primary:hover { box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.5); }
+.pwd-btn-primary:active { transform: scale(0.98); }
+.pwd-btn-secondary {
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.pwd-btn-secondary:hover { background: rgba(255,255,255,0.12); }
+.pwd-logout {
+  margin-top: 16px; padding: 6px 12px;
+  background: none; border: none;
+  color: var(--text-muted); font-size: 11px;
+  cursor: pointer;
+}
+.pwd-logout:hover { color: var(--danger); }
+
 /* ===== Feedback Floating Action Button ===== */
 .feedback-fab {
   position: fixed; bottom: 20px; right: 20px; z-index: 900;
